@@ -11,8 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -70,10 +74,19 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun app(viewModel: PessoaViewModel, mainActivity: MainActivity, modifier: Modifier = Modifier) {
-    var name by remember { mutableStateOf("") }
+    var nome by remember { mutableStateOf("") }
     var telefone by remember { mutableStateOf("") }
+    var pessoaList by remember { mutableStateOf(listOf<Pessoa>()) }
 
-    Column {
+    viewModel.getPessoa().observe(mainActivity) {
+        pessoaList = it
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Spacer(modifier = modifier.height(20.dp))
 
         Row(
@@ -95,11 +108,9 @@ fun app(viewModel: PessoaViewModel, mainActivity: MainActivity, modifier: Modifi
             horizontalArrangement = Arrangement.Center
         ) {
             TextField(
-                value = name,
-                onValueChange = { newName ->
-                    name = newName
-                },
-                label = { Text("Name") }
+                value = nome,
+                onValueChange = { newName -> nome = newName },
+                label = { Text("Nome") }
             )
         }
 
@@ -111,9 +122,7 @@ fun app(viewModel: PessoaViewModel, mainActivity: MainActivity, modifier: Modifi
         ) {
             TextField(
                 value = telefone,
-                onValueChange = { newTele ->
-                    telefone = newTele
-                },
+                onValueChange = { newTele -> telefone = newTele },
                 label = { Text("Telefone") }
             )
         }
@@ -126,14 +135,32 @@ fun app(viewModel: PessoaViewModel, mainActivity: MainActivity, modifier: Modifi
         ) {
             Button(
                 onClick = {
-                    val pessoa = Pessoa(nome = name, telefone = telefone)
+                    val pessoa = Pessoa(nome, telefone)
                     viewModel.upsertPessoa(pessoa)
-                    name = ""
+                    nome = ""  // Limpa o campo após inserção
                     telefone = ""
                 },
                 elevation = ButtonDefaults.elevatedButtonElevation(8.dp)
             ) {
-                Text("Register")
+                Text("Registrar")
+            }
+        }
+
+        Spacer(modifier = modifier.height(20.dp))
+
+        Divider()
+
+        LazyColumn {
+            items(pessoaList) { pessoa ->
+                Row(
+                    Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = pessoa.nome, modifier = Modifier.weight(1f))
+                    Text(text = pessoa.telefone, modifier = Modifier.weight(1f))
+                }
+                Divider()
             }
         }
     }
