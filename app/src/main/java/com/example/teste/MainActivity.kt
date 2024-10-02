@@ -3,6 +3,7 @@ package com.example.teste
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,34 +28,57 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.room.Room
+import com.example.teste.roomDB.Pessoa
+import com.example.teste.roomDB.PessoaDataBase
 import com.example.teste.ui.theme.TesteTheme
+import com.example.teste.viewModel.PessoaViewModel
+import com.example.teste.viewModel.Repository
 
 class MainActivity : ComponentActivity() {
+    private val db by lazy {
+        Room.databaseBuilder(
+            applicationContext,
+            PessoaDataBase::class.java,
+            "pessoa.db"
+        ).build()
+    }
+
+    private val viewModel by viewModels<PessoaViewModel>(
+        factoryProducer = {
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return PessoaViewModel(Repository(db)) as T
+                }
+            }
+        }
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             TesteTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    app()
+                    app(viewModel, this)
                 }
             }
         }
     }
 }
 
-
 @Composable
-fun app(modifier: Modifier = Modifier) {
-    var name by remember  { mutableStateOf("")}
-    var age by remember  { mutableStateOf("")}
+fun app(viewModel: PessoaViewModel, mainActivity: MainActivity, modifier: Modifier = Modifier) {
+    var name by remember { mutableStateOf("") }
+    var telefone by remember { mutableStateOf("") }
 
-    Column() {
+    Column {
         Spacer(modifier = modifier.height(20.dp))
 
-        Row(modifier = Modifier
-            .fillMaxWidth(),
-            Arrangement.Center
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
         ) {
             Text(
                 text = "App DataBase",
@@ -66,42 +90,48 @@ fun app(modifier: Modifier = Modifier) {
 
         Spacer(modifier = modifier.height(20.dp))
 
-        Row(modifier = Modifier
-            .fillMaxWidth(),
-            Arrangement.Center) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
             TextField(
                 value = name,
                 onValueChange = { newName ->
-                    name= newName
+                    name = newName
                 },
-                label = { Text("Name") },
+                label = { Text("Name") }
             )
-
         }
 
         Spacer(modifier = modifier.height(20.dp))
 
-        Row(modifier = Modifier
-            .fillMaxWidth(),
-            Arrangement.Center) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
             TextField(
-                value = age,
-                onValueChange = {newAge ->
-                    age = newAge},
-                label = { Text("Age") },
+                value = telefone,
+                onValueChange = { newTele ->
+                    telefone = newTele
+                },
+                label = { Text("Telefone") }
             )
         }
 
         Spacer(modifier = modifier.height(20.dp))
 
-        Row(modifier = Modifier
-            .fillMaxWidth(),
-            Arrangement.Center) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
             Button(
                 onClick = {
-                    // Handle button click
+                    val pessoa = Pessoa(nome = name, telefone = telefone)
+                    viewModel.upsertPessoa(pessoa)
+                    name = ""
+                    telefone = ""
                 },
-                elevation = ButtonDefaults.elevatedButtonElevation(8.dp) // Button elevation
+                elevation = ButtonDefaults.elevatedButtonElevation(8.dp)
             ) {
                 Text("Register")
             }
@@ -109,13 +139,16 @@ fun app(modifier: Modifier = Modifier) {
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-@Preview
 fun appPreview() {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        app()
+    TesteTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            // You need to pass a mock viewModel or replace this part for testing
+            // app(viewModel = mockViewModel, mainActivity = mockMainActivity)
+        }
     }
 }
